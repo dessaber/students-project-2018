@@ -1,0 +1,40 @@
+version: "2"
+
+services:
+  postgres_db:
+    restart: always
+    image: postgres:9.3
+    environment:
+      - POSTGRES_DB=apple
+      - POSTGRES_USER=testuser
+      - POSTGRES_PASSWORD=password
+    ports:
+      - 5432:5432
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - my-proxy-net
+
+  greetings_app:
+    restart: always
+    image: python:3.7-rc-stretch
+    build: .
+    environment:
+      - DB_URL=postgresql://testuser:password@postgres_db:5432/apple
+    volumes:
+      - ./greetings_app:/greetings_app
+    command: bash -c "pip install -r /greetings_app/requirements.txt && python /greetings_app/app.py"
+    networks:
+      - my-proxy-net
+
+  nginx:
+    restart: always
+    image: nginx:latest
+    ports:
+      - 5000:80
+    networks:
+      - my-proxy-net
+
+networks:
+  my-proxy-net:
+    driver: bridge
